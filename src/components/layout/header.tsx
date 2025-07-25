@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useActivePath } from "./use-active-path";
 
 const Logo = () => (
   <svg width="32" height="40" viewBox="0 0 62 79" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.8)] transition-all duration-300">
@@ -11,7 +12,11 @@ const Logo = () => (
   </svg>
 )
 
-const Header = () => {
+interface HeaderProps {
+  hideAuthButtons?: boolean;
+}
+
+const Header = ({ hideAuthButtons }: HeaderProps) => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -22,6 +27,7 @@ const Header = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const pathname = useActivePath();
   return (
     <header 
       id="home" 
@@ -35,18 +41,21 @@ const Header = () => {
            <Logo />
         </Link>
         <nav className="flex items-center justify-center gap-8 text-white text-sm font-body justify-self-center">
-          <Link href="/consult" className="hover:text-primary transition-colors">Consult</Link>
+          <Link href="/consult" className={cn("hover:text-primary transition-colors", pathname === "/consult" && "text-primary")}>Consult</Link>
+          <Link href="/lawgpt" className={cn("hover:text-primary transition-colors", pathname === "/lawgpt" && "text-primary")}>LawGPT</Link>
           <Link href="#services" className="hover:text-primary transition-colors">Resources</Link>
           <Link href="#pricing" className="hover:text-primary transition-colors">Pricing</Link>
         </nav>
-        <div className="flex items-center gap-4 justify-self-end">
-          <Button variant="ghost" asChild className="text-white hover:text-primary">
-            <Link href="#">Login</Link>
-          </Button>
-          <Button asChild className="rounded-full bg-secondary hover:bg-secondary/90 text-white px-6">
-            <Link href="/signup">Signup</Link>
-          </Button>
-        </div>
+        {!hideAuthButtons && (
+          <div className="flex items-center gap-4 justify-self-end">
+            <Button variant="ghost" asChild className="text-white hover:text-primary">
+              <Link href="#">Login</Link>
+            </Button>
+            <Button asChild className="rounded-full bg-secondary hover:bg-secondary/90 text-white px-6">
+              <Link href="/signup">Signup</Link>
+            </Button>
+          </div>
+        )}
       </div>
     </header>
   );

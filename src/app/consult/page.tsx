@@ -37,6 +37,7 @@ const ConsultHeader = () => (
       </Link>
       <nav className="flex items-center justify-center gap-8 text-white text-sm font-body justify-self-center">
         <Link href="/consult" className="hover:text-primary transition-colors text-primary">Consult</Link>
+        <Link href="/lawgpt" className="hover:text-primary transition-colors">LawGPT</Link>
         <Link href="/#services" className="hover:text-primary transition-colors">Resources</Link>
         <Link href="/#pricing" className="hover:text-primary transition-colors">Pricing</Link>
       </nav>

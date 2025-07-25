@@ -47,10 +47,6 @@ const Hero = () => {
       {/* Enhanced subtle yellow ambient glow for the overall hero section */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,193,7,0.12),transparent_60%)] pointer-events-none"></div>
       <div className="absolute top-1/3 left-0 w-full h-1/3 bg-gradient-to-r from-transparent via-primary/4 to-transparent pointer-events-none"></div>
-      
-      {/* Enhanced ambient dots */}
-      <div className="absolute top-20 left-1/4 w-1 h-1 bg-primary/30 rounded-full animate-pulse"></div>
-      <div className="absolute bottom-20 right-1/3 w-1 h-1 bg-primary/25 rounded-full animate-pulse"></div>
     </section>
   );
 };
