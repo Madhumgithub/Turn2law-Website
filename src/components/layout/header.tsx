@@ -13,10 +13,11 @@ const Logo = () => (
 )
 
 interface HeaderProps {
-  hideAuthButtons?: boolean;
+hideAuthButtons?: boolean;
+leftElement?: React.ReactNode;
 }
 
-const Header = ({ hideAuthButtons }: HeaderProps) => {
+const Header = ({ hideAuthButtons, leftElement }: HeaderProps) => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -33,13 +34,23 @@ const Header = ({ hideAuthButtons }: HeaderProps) => {
       id="home" 
       className={cn(
         "fixed top-0 left-0 w-full z-50 py-4 transition-all duration-300",
-        "bg-background/60 backdrop-blur-md border-b border-border/50"
+        "bg-background/60 backdrop-blur-md border-b border-border/50",
+        "relative"
       )}
     >
+      {/* Absolutely position leftElement at extreme left if provided */}
+      {leftElement && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 pl-3 flex items-center z-50">
+          {leftElement}
+          <Link href="/" aria-label="Home" className="ml-24"><Logo /></Link>
+        </div>
+      )}
       <div className="container mx-auto px-6 grid grid-cols-3 items-center">
-        <Link href="/" className="flex items-center group justify-self-start">
-           <Logo />
-        </Link>
+        {/* Always render a grid cell for layout consistency */}
+        <div className="flex items-center group justify-self-start h-[40px]">
+          {/* Only render logo in grid if leftElement is not provided */}
+          {!leftElement && <Link href="/" aria-label="Home"><Logo /></Link>}
+        </div>
         <nav className="flex items-center justify-center gap-8 text-white text-sm font-body justify-self-center">
           <Link href="/consult" className={cn("hover:text-primary transition-colors", pathname === "/consult" && "text-primary")}>Consult</Link>
           <Link href="/lawgpt" className={cn("hover:text-primary transition-colors", pathname === "/lawgpt" && "text-primary")}>LawGPT</Link>
