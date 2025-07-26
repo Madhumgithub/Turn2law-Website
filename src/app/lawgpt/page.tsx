@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Header from '@/components/layout/header';
 import SidebarDemo from "@/components/ui/sidebar-demo";
+import WowAhhAnimation from "./Animation";
 
 interface LawGPTHeaderProps {
   onSidebarOpen: () => void;
@@ -12,7 +13,7 @@ interface LawGPTHeaderProps {
 function LawGPTHeader({ onSidebarOpen, sidebarOpen }: LawGPTHeaderProps) {
   return (
     <Header
-      hideAuthButtons
+      // hideAuthButtons
       leftElement={
         <button
           className="mr-2 flex items-center focus:outline-none"
@@ -45,6 +46,7 @@ export default function LawGPTPage() {
   return (
     <>
       <LawGPTHeader onSidebarOpen={handleSidebarToggle} sidebarOpen={sidebarOpen} />
+      <WowAhhAnimation />
       {/* Sidebar overlays the page, rest of page remains unchanged */}
       {sidebarOpen && (
         <div className="fixed top-0 left-0 h-screen w-[300px] z-[100] bg-[#232323] border-r border-neutral-800 flex flex-col">
@@ -65,14 +67,14 @@ export default function LawGPTPage() {
               </svg>
             </button>
           </div>
-          <div className="flex flex-col gap-2 px-6 pt-2">
+          <div className="flex flex-col gap-2 px-6 pt-2 mt-3">
             {Array.from({ length: 6 }).map((_, idx) => (
               <div
                 key={idx}
                 className={
                   idx === 0
-                    ? "py-3 px-4 rounded-xl bg-[#353535] text-white font-semibold cursor-pointer mb-2"
-                    : "py-3 px-4 rounded-xl text-white cursor-pointer hover:bg-[#353535] transition mb-2"
+                    ? "py-3 px-4 rounded-xl bg-[#353535] text-white text-sm font-semibold cursor-pointer"
+                    : "py-3 px-4 rounded-xl text-white cursor-pointer text-sm hover:bg-[#353535] transition"
                 }
               >
                 Chat title
@@ -96,15 +98,19 @@ export default function LawGPTPage() {
         {/* Heading */}
         <h1 className="font-bold text-[40px] leading-[48px] text-white mb-8 text-center" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>What can I help with</h1>
         {/* Chatbox */}
-        <div className="w-[600px] h-[96px] bg-[#232323] rounded-[28px] flex items-center relative mx-auto">
-          <input
-            className="w-[480px] h-[48px] bg-transparent border-none outline-none text-white font-medium text-[18px] leading-[22px] pl-8 z-20 box-border"
-            style={{ fontFamily: 'Instrument Sans, sans-serif' }}
+        <div className="bg-[#232323] rounded-[28px] flex items-center relative mx-auto p-5">
+          <textarea
+            className="w-[480px] h-[72px] px-2 bg-transparent border-none outline-none text-white font-medium text-[18px] leading-[22px] z-20 box-border resize-none"
             placeholder="Ask me anything about law"
+            onResize={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+            }}
+            rows={2}
           />
           {/* Send Button */}
           <button
-            className="absolute right-6 top-1/2 -translate-y-1/2 w-11 h-11 bg-white rounded-full border-none flex items-center justify-center cursor-pointer z-30 shadow-none p-0"
+            className="absolute right-3 bottom-3 w-9 h-9 bg-white rounded-full border-none flex items-center justify-center cursor-pointer z-30 shadow-none p-0"
             aria-label="Send"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">

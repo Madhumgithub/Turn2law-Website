@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Search, Star, MapPin, Phone, Mail, Calendar, X } from 'lucide-react';
 import Link from 'next/link';
+import Header from "@/components/layout/header";
 
 interface Lawyer {
   id: number;
@@ -29,29 +30,6 @@ const Logo = () => (
   </svg>
 );
 
-const ConsultHeader = () => (
-  <header className="fixed top-0 left-0 w-full z-50 py-4 bg-background/60 backdrop-blur-md border-b border-border/50">
-    <div className="container mx-auto px-6 grid grid-cols-3 items-center">
-      <Link href="/" className="flex items-center group justify-self-start">
-        <Logo />
-      </Link>
-      <nav className="flex items-center justify-center gap-8 text-white text-sm font-body justify-self-center">
-        <Link href="/consult" className="hover:text-primary transition-colors text-primary">Consult</Link>
-        <Link href="/lawgpt" className="hover:text-primary transition-colors">LawGPT</Link>
-        <Link href="/#services" className="hover:text-primary transition-colors">Resources</Link>
-        <Link href="/#pricing" className="hover:text-primary transition-colors">Pricing</Link>
-      </nav>
-      <div className="flex items-center gap-4 justify-self-end">
-        <Button variant="ghost" asChild className="text-white hover:text-primary">
-          <Link href="#">Login</Link>
-        </Button>
-        <Button asChild className="rounded-full bg-secondary hover:bg-secondary/90 text-white px-6">
-          <Link href="/signup">Signup</Link>
-        </Button>
-      </div>
-    </div>
-  </header>
-);
 
 const TypingEffect = () => {
   const [displayText, setDisplayText] = useState('');
@@ -345,22 +323,23 @@ const ConsultPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <ConsultHeader />
+      <Header />
       
-      <div className="pt-20 px-6">
-        <div className="container mx-auto py-12">
+      <div className="pt-5 px-6">
+        <div className="container mx-auto py-12 pt-8">
           {/* Header Section */}
           <div className="flex justify-between items-start mb-12">
             <div className="flex-1">
               <TypingEffect />
               
+              <div className='w-full justify-between flex items-center'>
               {/* Category Pills */}
-              <div className="flex flex-wrap gap-4 mb-8">
+              <div className="flex flex-wrap gap-4">
                 {categories.map((category) => (
                   <Button
                     key={category}
                     variant={selectedCategory === category ? "default" : "outline"}
-                    className={`rounded-full px-6 py-2 text-sm transition-all duration-300 transform hover:scale-105 ${
+                    className={`rounded-full px-6 py-3 text-sm transition-all h-12 duration-300 transform hover:scale-105 ${
                       selectedCategory === category 
                         ? 'bg-white text-black hover:bg-white/90 shadow-lg' 
                         : 'border-white/30 text-white hover:bg-white/10 hover:border-white/50'
@@ -371,22 +350,14 @@ const ConsultPage = () => {
                   </Button>
                 ))}
               </div>
-            </div>
-            
-            {/* Location and Search */}
-            <div className="flex flex-col items-end gap-4">
-              <div className="flex items-center gap-2 text-white border border-white/30 rounded-lg px-4 py-2 hover:border-white/50 transition-colors">
-                <MapPin className="w-4 h-4 text-yellow-400" />
-                <span className="text-sm">Chennai High Court</span>
-              </div>
               
-              <div className="relative w-80">
+               <div className="relative w-80">
                 <Input
                   type="text"
                   placeholder="Search lawyers..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent border-white/30 text-white placeholder-white/50 pr-12 rounded-full h-12 focus:border-yellow-400 transition-colors"
+                  className="w-full bg-transparent border-white/30 text-white placeholder-white/50 pr-12 rounded-full h-12 pl-4 focus:border-yellow-400 transition-colors"
                 />
                 <Button
                   size="sm"
@@ -395,7 +366,12 @@ const ConsultPage = () => {
                   <Search className="w-4 h-4" />
                 </Button>
               </div>
+              
+              </div>
             </div>
+            
+            {/* Location and Search */}
+            
           </div>
           
           {/* Results Count */}
