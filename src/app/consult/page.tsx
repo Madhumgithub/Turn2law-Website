@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Search, Star, MapPin, Phone, Mail, Calendar, X } from 'lucide-react';
 import Link from 'next/link';
 import Header from "@/components/layout/header";
+import { FlipWords } from '@/components/ui/flip-words';
 
 interface Lawyer {
   id: number;
@@ -29,77 +30,11 @@ const Logo = () => (
     <path d="M46.3782 0L30.7564 16.3146L36.1293 21.5024L42.6514 14.691V53.3941L6.77247 17.715C4.26262 15.2191 0 17.0044 0 20.5514V79H7.45364V28.9262L43.3326 64.6053C45.8423 67.1011 50.105 65.316 50.105 61.7689V14.691L56.6272 21.5024L62 16.3146L46.3782 0Z" fill="white"/>
   </svg>
 );
-
-
-const TypingEffect = () => {
-  const [displayText, setDisplayText] = useState('');
-  const [showLawyers, setShowLawyers] = useState(false);
-  const [lawyersText, setLawyersText] = useState('');
-  const fullText = 'Find the best ';
-  const lawyersWord = 'lawyers';
-  
-  useEffect(() => {
-    let currentIndex = 0;
-    const typingInterval = setInterval(() => {
-      if (currentIndex <= fullText.length) {
-        setDisplayText(fullText.slice(0, currentIndex));
-        currentIndex++;
-      } else {
-        clearInterval(typingInterval);
-        setShowLawyers(true);
-        // Start typing "lawyers"
-        let lawyersIndex = 0;
-        const lawyersInterval = setInterval(() => {
-          if (lawyersIndex <= lawyersWord.length) {
-            setLawyersText(lawyersWord.slice(0, lawyersIndex));
-            lawyersIndex++;
-          } else {
-            clearInterval(lawyersInterval);
-          }
-        }, 80);
-      }
-    }, 80);
-
-    return () => clearInterval(typingInterval);
-  }, []);
-
-  return (
-    <h1 className="text-6xl font-bold text-white mb-8 leading-tight">
-      {displayText}
-      <span className="relative">
-        <span className="text-yellow-400">{lawyersText}</span>
-        {lawyersText.length === lawyersWord.length && (
-          <svg
-            className="absolute -bottom-2 left-0 w-full h-3"
-            viewBox="0 0 200 12"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M2 8c15-2 30-4 45-2s30 4 45 2 30-4 45-2 30 4 45 2 15-2 16-2"
-              stroke="#facc15"
-              strokeWidth="3"
-              strokeLinecap="round"
-              fill="none"
-              style={{
-                filter: 'url(#roughen)',
-              }}
-            />
-            <defs>
-              <filter id="roughen">
-                <feTurbulence baseFrequency="0.02" numOctaves="3" result="noise" seed="1"/>
-                <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5"/>
-              </filter>
-            </defs>
-          </svg>
-        )}
-      </span>
-      {lawyersText.length < lawyersWord.length && showLawyers && (
-        <span className="animate-pulse text-yellow-400">|</span>
-      )}
-    </h1>
-  );
-};
+const TypingEffect = () => (
+  <h1 className="text-6xl font-bold text-white mb-8 leading-tight">
+    Find the best <span className='text-yellow-400'><FlipWords className='*:text-yellow-400' words={['lawyers', 'students', 'drugs']} /></span>
+  </h1>
+);
 
 const ConsultPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('Property and Estate');
@@ -330,7 +265,17 @@ const ConsultPage = () => {
           {/* Header Section */}
           <div className="flex justify-between items-start mb-12">
             <div className="flex-1">
-              <TypingEffect />
+              <div className='flex items-center justify-between'>
+                <TypingEffect />
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 border-white/30 text-white hover:bg-white/10 hover:border-yellow-400 rounded-full px-5 py-2 transition-all"
+                  onClick={() => window.open('https://www.google.com/maps/place/Chennai,+India', '_blank')}
+                >
+                  <MapPin className="w-4 h-4 text-yellow-400" />
+                  Chennai, India
+                </Button>
+              </div>
               
               <div className='w-full justify-between flex items-center'>
               {/* Category Pills */}
