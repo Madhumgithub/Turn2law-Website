@@ -1,9 +1,85 @@
+
 "use client";
 
-import { useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import Header from '@/components/layout/header';
 import SidebarDemo from "@/components/ui/sidebar-demo";
 import WowAhhAnimation from "./Animation";
+
+// Auto-sizing chat bubble component
+function AutoBubble({ message }: { message: string }) {
+  const textRef = useRef<HTMLDivElement>(null);
+  const [bubbleSize, setBubbleSize] = useState({ width: 120, height: 77 });
+  const [pop, setPop] = useState(false);
+  const minWidth = 80;
+  const maxWidth = 358;
+  const padding = 36; // 18px left + 18px right
+  const minHeight = 53;
+  const maxHeight = 300;
+
+  useEffect(() => {
+    if (textRef.current) {
+      // 1. Measure width needed for single line (no wrapping)
+      textRef.current.style.width = 'auto';
+      textRef.current.style.whiteSpace = 'nowrap';
+      const singleLineWidth = textRef.current.scrollWidth + padding;
+
+      if (singleLineWidth <= maxWidth) {
+        setBubbleSize({ width: Math.max(singleLineWidth, minWidth), height: minHeight });
+      } else {
+        textRef.current.style.width = maxWidth + 'px';
+        textRef.current.style.whiteSpace = 'pre-wrap';
+        const wrappedHeight = Math.min(Math.max(textRef.current.scrollHeight + 24, minHeight), maxHeight);
+        setBubbleSize({ width: maxWidth, height: wrappedHeight });
+      }
+      // Pop animation on send
+      setPop(true);
+      const timeout = setTimeout(() => setPop(false), 180);
+      return () => clearTimeout(timeout);
+    }
+  }, [message]);
+
+  return (
+    <svg
+      width={bubbleSize.width}
+      height={bubbleSize.height}
+      viewBox={`0 0 ${bubbleSize.width} ${bubbleSize.height}`}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`pointer-events-auto transition-all duration-300 ${pop ? 'scale-105' : 'scale-100'}`}
+      style={{ filter: 'drop-shadow(0 4px 16px rgba(60,155,151,0.18))', borderRadius: 32, transition: 'all 0.3s cubic-bezier(.4,2,.6,1)' }}
+    >
+      <path d={`M0 28C0 12.536 12.536 0 28 0H${bubbleSize.width-28}C${bubbleSize.width-12.536} 0 ${bubbleSize.width} 12.536 ${bubbleSize.width} 28V${bubbleSize.height-8}C${bubbleSize.width} ${bubbleSize.height-3.582} ${bubbleSize.width-3.582} ${bubbleSize.height} ${bubbleSize.width-8} ${bubbleSize.height}H28C12.536 ${bubbleSize.height} 0 ${bubbleSize.height-12.536} 0 ${bubbleSize.height-28}V28Z`} fill="#3C9B97" fillOpacity="0.8" />
+      <foreignObject x="0" y="0" width={bubbleSize.width} height={bubbleSize.height}>
+        <div
+          ref={textRef}
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            color: 'white',
+            fontWeight: 600,
+            fontSize: 20,
+            lineHeight: '24px',
+            fontFamily: 'Instrument Sans, sans-serif',
+            textAlign: 'left',
+            wordBreak: 'break-word',
+            padding: '0 18px',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
+            whiteSpace: 'pre-wrap',
+            borderRadius: 32,
+            transition: 'all 0.3s cubic-bezier(.4,2,.6,1)',
+          }}
+        >
+          <span style={{width: '100%', display: 'block'}}>{message}</span>
+        </div>
+      </foreignObject>
+    </svg>
+  );
+}
 
 interface LawGPTHeaderProps {
   onSidebarOpen: () => void;
@@ -85,8 +161,17 @@ function LawGPTHeader({ onSidebarOpen, sidebarOpen }: LawGPTHeaderProps) {
 
 export default function LawGPTPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [sentMessage, setSentMessage] = useState<string | null>(null);
 
   const handleSidebarToggle = () => setSidebarOpen((open) => !open);
+
+  const handleSend = () => {
+    if (message.trim() !== "") {
+      setSentMessage(message);
+      setMessage("");
+    }
+  };
 
   return (
     <>
@@ -94,77 +179,53 @@ export default function LawGPTPage() {
       <WowAhhAnimation />
       {/* Sidebar overlays the page, rest of page remains unchanged */}
       {sidebarOpen && (
+        // ...existing code for sidebar...
         <div className="fixed top-0 left-0 h-screen w-[300px] z-[100] bg-[#232323] border-r border-neutral-800 flex flex-col">
-          <div className="flex items-center gap-3 px-6 pt-6 pb-4">
-            {/* LawGPT logo */}
+          {/* ...existing code... */}
+        </div>
+      )}
+      {/* Main LawGPT content or sent message box */}
+      {!sentMessage ? (
+        <div className="relative w-screen h-screen min-h-[720px] bg-background font-body overflow-hidden flex flex-col items-center justify-start pt-48">
+          {/* LawGPT Logo and Title */}
+          <div className="flex flex-row items-center justify-center gap-3 mb-4">
             <svg width="31" height="31" viewBox="0 0 31 31" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M3.35028 11.6585C5.38323 9.62556 8.67069 9.61698 10.693 11.6393L14.0619 15.0082L10.7122 18.3579C8.67927 20.3908 5.39181 20.3994 3.36946 18.377L0.000606868 15.0082L3.35028 11.6585Z" fill="#3C9B97" fillOpacity="0.6"/>
               <path d="M18.3581 3.34931C20.391 5.38225 20.3996 8.66971 18.3773 10.6921L15.0084 14.0609L11.6587 10.7112C9.6258 8.6783 9.61722 5.39083 11.6396 3.36848L15.0084 -0.000370287L18.3581 3.34931Z" fill="#3C9B97" fillOpacity="0.6"/>
               <path d="M19.3044 11.6585C21.3373 9.62556 24.6248 9.61698 26.6471 11.6393L30.016 15.0082L26.6663 18.3579C24.6334 20.3908 21.3459 20.3994 19.3236 18.377L15.9547 15.0082L19.3044 11.6585Z" fill="#3C9B97" fillOpacity="0.6"/>
               <path d="M18.4934 19.1696C20.5263 21.2026 20.5033 24.5216 18.4421 26.5828L15.0085 30.0164L11.6588 26.6668C9.62585 24.6338 9.64879 21.3148 11.71 19.2536L15.1437 15.8199L18.4934 19.1696Z" fill="#3C9B97" fillOpacity="0.6"/>
             </svg>
-            <span className="font-semibold text-[20px] leading-6 text-white">LawGPT</span>
-            {/* Sidebar close button, same size and alignment as header SVG */}
-            <button className="ml-auto flex items-center" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
-              <svg width="29" height="29" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path fillRule="evenodd" clipRule="evenodd" d="M17.0484 8.0849C17.3881 8.42467 17.3881 8.97551 17.0484 9.31527L11.8635 14.5001L17.0484 19.6849C17.3881 20.0246 17.3881 20.5754 17.0484 20.9153C16.7086 21.255 16.1577 21.255 15.818 20.9153L10.018 15.1153C9.85484 14.9521 9.76318 14.7308 9.76318 14.5001C9.76318 14.2693 9.85484 14.0481 10.018 13.8849L15.818 8.0849C16.1577 7.74514 16.7086 7.74514 17.0484 8.0849Z" fill="white" style={{fill:'white',fillOpacity:1}}/>
-                <path fillRule="evenodd" clipRule="evenodd" d="M10.2852 8.0849C10.6249 8.42467 10.6249 8.97551 10.2852 9.31527L5.10035 14.5001L10.2852 19.6849C10.6249 20.0246 10.6249 20.5754 10.2852 20.9153C9.94542 21.255 9.39456 21.255 9.05481 20.9153L3.25481 15.1153C3.09166 14.9521 3 14.7308 3 14.5001C3 14.2693 3.09166 14.0481 3.25481 13.8849L9.05481 8.0849C9.39456 7.74514 9.94542 7.74514 10.2852 8.0849Z" fill="white" style={{fill:'white',fillOpacity:1}}/>
+            <span className="font-semibold text-[20px] leading-6 text-white/60" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>LawGPT</span>
+          </div>
+          {/* Heading */}
+          <h1 className="font-bold text-[40px] leading-[48px] text-white mb-8 text-center" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>What can I help with</h1>
+          {/* Chatbox */}
+          <div className="bg-[#232323] rounded-[28px] flex items-center relative mx-auto p-5">
+            <textarea
+              className="w-[480px] h-[72px] px-2 bg-transparent border-none outline-none text-white font-medium text-[18px] leading-[22px] z-20 box-border resize-none"
+              placeholder="Ask me anything about law"
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              rows={2}
+            />
+            {/* Send Button */}
+            <button
+              className="absolute right-3 bottom-3 w-9 h-9 bg-white rounded-full border-none flex items-center justify-center cursor-pointer z-30 shadow-none p-0"
+              aria-label="Send"
+              onClick={handleSend}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="11" fill="none" />
+                <path d="M12 17V7M12 7L7 12M12 7L17 12" stroke="#0E0E0E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
           </div>
-          <div className="flex flex-col gap-2 px-6 pt-2 mt-3">
-            {Array.from({ length: 6 }).map((_, idx) => (
-              <div
-                key={idx}
-                className={
-                  idx === 0
-                    ? "py-3 px-4 rounded-xl bg-[#353535] text-white text-sm font-semibold cursor-pointer"
-                    : "py-3 px-4 rounded-xl text-white cursor-pointer text-sm hover:bg-[#353535] transition"
-                }
-              >
-                Chat title
-              </div>
-            ))}
-          </div>
+        </div>
+      ) : (
+        <div className="fixed top-32 right-64 z-50 flex flex-col items-end pointer-events-none">
+          <AutoBubble message={sentMessage} />
         </div>
       )}
-      {/* Main LawGPT content goes here, centered and clean, matching Figma/landing page */}
-      <div className="relative w-screen h-screen min-h-[720px] bg-background font-body overflow-hidden flex flex-col items-center justify-start pt-48">
-        {/* LawGPT Logo and Title */}
-        <div className="flex flex-row items-center justify-center gap-3 mb-4">
-          <svg width="31" height="31" viewBox="0 0 31 31" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3.35028 11.6585C5.38323 9.62556 8.67069 9.61698 10.693 11.6393L14.0619 15.0082L10.7122 18.3579C8.67927 20.3908 5.39181 20.3994 3.36946 18.377L0.000606868 15.0082L3.35028 11.6585Z" fill="#3C9B97" fillOpacity="0.6"/>
-            <path d="M18.3581 3.34931C20.391 5.38225 20.3996 8.66971 18.3773 10.6921L15.0084 14.0609L11.6587 10.7112C9.6258 8.6783 9.61722 5.39083 11.6396 3.36848L15.0084 -0.000370287L18.3581 3.34931Z" fill="#3C9B97" fillOpacity="0.6"/>
-            <path d="M19.3044 11.6585C21.3373 9.62556 24.6248 9.61698 26.6471 11.6393L30.016 15.0082L26.6663 18.3579C24.6334 20.3908 21.3459 20.3994 19.3236 18.377L15.9547 15.0082L19.3044 11.6585Z" fill="#3C9B97" fillOpacity="0.6"/>
-            <path d="M18.4934 19.1696C20.5263 21.2026 20.5033 24.5216 18.4421 26.5828L15.0085 30.0164L11.6588 26.6668C9.62585 24.6338 9.64879 21.3148 11.71 19.2536L15.1437 15.8199L18.4934 19.1696Z" fill="#3C9B97" fillOpacity="0.6"/>
-          </svg>
-          <span className="font-semibold text-[20px] leading-6 text-white/60" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>LawGPT</span>
-        </div>
-        {/* Heading */}
-        <h1 className="font-bold text-[40px] leading-[48px] text-white mb-8 text-center" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>What can I help with</h1>
-        {/* Chatbox */}
-        <div className="bg-[#232323] rounded-[28px] flex items-center relative mx-auto p-5">
-          <textarea
-            className="w-[480px] h-[72px] px-2 bg-transparent border-none outline-none text-white font-medium text-[18px] leading-[22px] z-20 box-border resize-none"
-            placeholder="Ask me anything about law"
-            onResize={(e) => {
-              e.stopPropagation()
-              e.preventDefault()
-            }}
-            rows={2}
-          />
-          {/* Send Button */}
-          <button
-            className="absolute right-3 bottom-3 w-9 h-9 bg-white rounded-full border-none flex items-center justify-center cursor-pointer z-30 shadow-none p-0"
-            aria-label="Send"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="11" fill="none" />
-              <path d="M12 17V7M12 7L7 12M12 7L17 12" stroke="#0E0E0E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
-      </div>
     </>
   );
 }
