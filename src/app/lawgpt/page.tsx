@@ -1,9 +1,99 @@
 
 "use client";
 
+// Simple skeleton loader component
+function SkeletonLoader() {
+  return (
+    <div className="flex flex-col gap-3 mt-4">
+      <div className="h-3 rounded bg-neutral-400/60 animate-pulse" style={{ width: '80%' }} />
+      <div className="h-3 rounded bg-neutral-400/40 animate-pulse" style={{ width: '60%' }} />
+      <div className="h-3 rounded bg-neutral-400/50 animate-pulse" style={{ width: '70%' }} />
+      <div className="h-3 rounded bg-neutral-400/30 animate-pulse" style={{ width: '40%' }} />
+      <div className="h-3 rounded bg-neutral-400/20 animate-pulse" style={{ width: '30%' }} />
+    </div>
+  );
+}
+
 import React, { useRef, useEffect, useState } from "react";
 import Header from '@/components/layout/header';
-import SidebarDemo from "@/components/ui/sidebar-demo";
+// Custom LawGPT Sidebar
+function LawGPTSidebar({ onClose }: { onClose: () => void }) {
+  const mockChats = [
+    "Chat title",
+    "Chat title",
+    "Chat title",
+    "Chat title",
+    "Chat title",
+    "Chat title",
+    "Chat title"
+  ];
+  return (
+    <div className="fixed top-0 left-0 h-screen w-[340px] z-[100] bg-[#202020] border-r border-[#232323] flex flex-col shadow-2xl" style={{minWidth:340}}>
+      {/* Header with LawGPT icon and close button */}
+      <div className="flex items-center justify-between px-7 pt-3 pb-2" style={{ minHeight: 56 }}>
+        <div className="flex items-center gap-3">
+          <svg width="31" height="31" viewBox="0 0 31 31" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3.35028 11.6585C5.38323 9.62556 8.67069 9.61698 10.693 11.6393L14.0619 15.0082L10.7122 18.3579C8.67927 20.3908 5.39181 20.3994 3.36946 18.377L0.000606868 15.0082L3.35028 11.6585Z" fill="#3C9B97" fillOpacity="0.6"/>
+            <path d="M18.3581 3.34931C20.391 5.38225 20.3996 8.66971 18.3773 10.6921L15.0084 14.0609L11.6587 10.7112C9.6258 8.6783 9.61722 5.39083 11.6396 3.36848L15.0084 -0.000370287L18.3581 3.34931Z" fill="#3C9B97" fillOpacity="0.6"/>
+            <path d="M19.3044 11.6585C21.3373 9.62556 24.6248 9.61698 26.6471 11.6393L30.016 15.0082L26.6663 18.3579C24.6334 20.3908 21.3459 20.3994 19.3236 18.377L15.9547 15.0082L19.3044 11.6585Z" fill="#3C9B97" fillOpacity="0.6"/>
+            <path d="M18.4934 19.1696C20.5263 21.2026 20.5033 24.5216 18.4421 26.5828L15.0085 30.0164L11.6588 26.6668C9.62585 24.6338 9.64879 21.3148 11.71 19.2536L15.1437 15.8199L18.4934 19.1696Z" fill="#3C9B97" fillOpacity="0.6"/>
+          </svg>
+          <span className="font-bold text-2xl text-white/80" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>LawGPT</span>
+        </div>
+        <button
+          onClick={onClose}
+          className="ml-2 flex items-center justify-center h-[45px] w-[45px] transition-colors focus:outline-none"
+          style={{ boxShadow: 'none', background: 'none', borderRadius: 9999, padding: 0 }}
+          aria-label="Close sidebar"
+        >
+          {/* Double chevron (>>) icon for closing, as provided */}
+          <svg width="29" height="29" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fillRule="evenodd" clipRule="evenodd" d="M17.0484 8.0849C17.3881 8.42467 17.3881 8.97551 17.0484 9.31527L11.8635 14.5001L17.0484 19.6849C17.3881 20.0246 17.3881 20.5754 17.0484 20.9153C16.7086 21.255 16.1577 21.255 15.818 20.9153L10.018 15.1153C9.85484 14.9521 9.76318 14.7308 9.76318 14.5001C9.76318 14.2693 9.85484 14.0481 10.018 13.8849L15.818 8.0849C16.1577 7.74514 16.7086 7.74514 17.0484 8.0849Z" fill="white" style={{fill:'white',fillOpacity:1}}/>
+            <path fillRule="evenodd" clipRule="evenodd" d="M10.2852 8.0849C10.6249 8.42467 10.6249 8.97551 10.2852 9.31527L5.10035 14.5001L10.2852 19.6849C10.6249 20.0246 10.6249 20.5754 10.2852 20.9153C9.94542 21.255 9.39456 21.255 9.05481 20.9153L3.25481 15.1153C3.09166 14.9521 3 14.7308 3 14.5001C3 14.2693 3.09166 14.0481 3.25481 13.8849L9.05481 8.0849C9.39456 7.74514 9.94542 7.74514 10.2852 8.0849Z" fill="white" style={{fill:'white',fillOpacity:1}}/>
+          </svg>
+        </button>
+      </div>
+      {/* Chat history mockups */}
+      <div className="flex-1 overflow-y-auto px-7 pt-6">
+        {/* No label, just chat titles */}
+        <div className="flex flex-col gap-4">
+          {mockChats.map((chat, i) => (
+            <div
+              key={i}
+              className={
+                `font-bold text-[1.18rem] text-white flex items-center transition-colors cursor-pointer select-none ` +
+                (i === 0
+                  ? 'bg-[#3A3A3A] text-white'
+                  : 'hover:bg-[#232323] text-white/90')
+              }
+              style={{
+                width: 239,
+                height: 42,
+                borderRadius: 13,
+                paddingLeft: 22,
+                paddingRight: 22,
+                fontFamily: 'Instrument Sans, sans-serif',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                background: i === 0 ? '#3A3A3A' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                marginLeft: 0,
+                marginRight: 0,
+                boxSizing: 'border-box',
+              }}
+            >
+              {chat}
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* No new chat button at bottom, just spacing */}
+      <div className="py-6" />
+    </div>
+  );
+}
 import WowAhhAnimation from "./Animation";
 
 // Auto-sizing chat bubble component
@@ -163,12 +253,31 @@ export default function LawGPTPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [sentMessage, setSentMessage] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiTitle, setAiTitle] = useState<string | null>(null);
+  const [aiContent, setAiContent] = useState<string | null>(null);
 
   const handleSidebarToggle = () => setSidebarOpen((open) => !open);
 
   const handleSend = () => {
     if (message.trim() !== "") {
       setSentMessage(message);
+      setAiTitle(null);
+      setAiContent(null);
+      setAiLoading(true);
+      // Simulate AI reply: set title and show skeleton, then show content
+      setTimeout(() => {
+        // For demo, just use a simple mapping or fallback
+        let title = "AI Response";
+        if (message.toLowerCase().includes("copyright")) title = "Copyright Action";
+        else if (message.toLowerCase().includes("divorce")) title = "Divorce Law";
+        else if (message.toLowerCase().includes("property")) title = "Property Dispute";
+        setAiTitle(title);
+        setTimeout(() => {
+          setAiContent("This is a sample AI-generated answer to your question. Replace this with your actual AI response.");
+          setAiLoading(false);
+        }, 1800);
+      }, 600);
       setMessage("");
     }
   };
@@ -179,10 +288,7 @@ export default function LawGPTPage() {
       <WowAhhAnimation />
       {/* Sidebar overlays the page, rest of page remains unchanged */}
       {sidebarOpen && (
-        // ...existing code for sidebar...
-        <div className="fixed top-0 left-0 h-screen w-[300px] z-[100] bg-[#232323] border-r border-neutral-800 flex flex-col">
-          {/* ...existing code... */}
-        </div>
+        <LawGPTSidebar onClose={() => setSidebarOpen(false)} />
       )}
       {/* Main LawGPT content or sent message box */}
       {!sentMessage ? (
@@ -222,8 +328,21 @@ export default function LawGPTPage() {
           </div>
         </div>
       ) : (
-        <div className="fixed top-32 right-64 z-50 flex flex-col items-end pointer-events-none">
-          <AutoBubble message={sentMessage} />
+        <div className="relative w-screen h-screen min-h-[720px] bg-background font-body overflow-hidden flex flex-col items-center justify-start pt-32">
+          {/* Sent message bubble at top right */}
+          <div className="fixed top-32 right-64 z-50 flex flex-col items-end pointer-events-none">
+            <AutoBubble message={sentMessage} />
+          </div>
+          {/* AI reply area */}
+          <div className="w-full max-w-4xl mx-auto mt-12 px-8">
+            {aiTitle && (
+              <h2 className="text-white text-[2.5rem] font-bold mb-6" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>{aiTitle}</h2>
+            )}
+            {aiLoading && <SkeletonLoader />}
+            {aiContent && !aiLoading && (
+              <div className="mt-6 text-white/90 text-lg leading-7" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>{aiContent}</div>
+            )}
+          </div>
         </div>
       )}
     </>
