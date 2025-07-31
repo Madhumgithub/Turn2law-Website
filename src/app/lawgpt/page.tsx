@@ -32,6 +32,26 @@ function LawGPTHeader({ onSidebarOpen, sidebarOpen }: LawGPTHeaderProps) {
               </svg>
             )}
           </button>
+          {/* Vertical line SVG separator between main logo and green logo (centered between them) */}
+          <svg
+            width="2"
+            height="60"
+            viewBox="0 0 1 60"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+              position: 'fixed',
+              right: -17,
+              top: -4,
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            aria-label="Separator"
+          >
+            <path d="M1 39.5V0.5" stroke="#FEFEFE" strokeOpacity="0.4" style={{stroke:'#FEFEFE',strokeOpacity:0.4}} />
+          </svg>
           {/* LawGPT green logo absolutely positioned, visually aligned with main logo */}
           <svg
             width="31"
