@@ -101,30 +101,55 @@ function AutoBubble({ message }: { message: string }) {
   const textRef = useRef<HTMLDivElement>(null);
   const [bubbleSize, setBubbleSize] = useState({ width: 120, height: 77 });
   const [pop, setPop] = useState(false);
-  const minWidth = 80;
-  const maxWidth = 358;
+  const minWidth = 200;
+  const maxWidth = 450;
   const padding = 36; // 18px left + 18px right
-  const minHeight = 53;
-  const maxHeight = 300;
+  const minHeight = 60;
+  const maxHeight = 400;
 
   useEffect(() => {
-    if (textRef.current) {
-      // 1. Measure width needed for single line (no wrapping)
-      textRef.current.style.width = 'auto';
-      textRef.current.style.whiteSpace = 'nowrap';
-      const singleLineWidth = textRef.current.scrollWidth + padding;
+    if (textRef.current && message) {
+      // Create a temporary element to measure text
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.visibility = 'hidden';
+      tempDiv.style.whiteSpace = 'nowrap';
+      tempDiv.style.fontSize = '20px';
+      tempDiv.style.fontFamily = 'Instrument Sans, sans-serif';
+      tempDiv.style.fontWeight = '600';
+      tempDiv.style.lineHeight = '24px';
+      tempDiv.textContent = message;
+      document.body.appendChild(tempDiv);
+      
+      const singleLineWidth = tempDiv.offsetWidth + padding;
+      document.body.removeChild(tempDiv);
 
       if (singleLineWidth <= maxWidth) {
         setBubbleSize({ width: Math.max(singleLineWidth, minWidth), height: minHeight });
       } else {
-        textRef.current.style.width = maxWidth + 'px';
-        textRef.current.style.whiteSpace = 'pre-wrap';
-        const wrappedHeight = Math.min(Math.max(textRef.current.scrollHeight + 24, minHeight), maxHeight);
+        // For multi-line text, create another temp element
+        const tempMultiDiv = document.createElement('div');
+        tempMultiDiv.style.position = 'absolute';
+        tempMultiDiv.style.visibility = 'hidden';
+        tempMultiDiv.style.width = (maxWidth - padding) + 'px';
+        tempMultiDiv.style.fontSize = '20px';
+        tempMultiDiv.style.fontFamily = 'Instrument Sans, sans-serif';
+        tempMultiDiv.style.fontWeight = '600';
+        tempMultiDiv.style.lineHeight = '24px';
+        tempMultiDiv.style.whiteSpace = 'pre-wrap';
+        tempMultiDiv.style.wordWrap = 'break-word';
+        tempMultiDiv.textContent = message;
+        document.body.appendChild(tempMultiDiv);
+        
+        const wrappedHeight = Math.min(Math.max(tempMultiDiv.offsetHeight + padding, minHeight), maxHeight);
+        document.body.removeChild(tempMultiDiv);
+        
         setBubbleSize({ width: maxWidth, height: wrappedHeight });
       }
+      
       // Pop animation on send
       setPop(true);
-      const timeout = setTimeout(() => setPop(false), 180);
+      const timeout = setTimeout(() => setPop(false), 200);
       return () => clearTimeout(timeout);
     }
   }, [message]);
@@ -139,8 +164,8 @@ function AutoBubble({ message }: { message: string }) {
       className={`pointer-events-auto transition-all duration-300 ${pop ? 'scale-105' : 'scale-100'}`}
       style={{ filter: 'drop-shadow(0 4px 16px rgba(60,155,151,0.18))', borderRadius: 32, transition: 'all 0.3s cubic-bezier(.4,2,.6,1)' }}
     >
-      <path d={`M0 28C0 12.536 12.536 0 28 0H${bubbleSize.width-28}C${bubbleSize.width-12.536} 0 ${bubbleSize.width} 12.536 ${bubbleSize.width} 28V${bubbleSize.height-8}C${bubbleSize.width} ${bubbleSize.height-3.582} ${bubbleSize.width-3.582} ${bubbleSize.height} ${bubbleSize.width-8} ${bubbleSize.height}H28C12.536 ${bubbleSize.height} 0 ${bubbleSize.height-12.536} 0 ${bubbleSize.height-28}V28Z`} fill="#3C9B97" fillOpacity="0.8" />
-      <foreignObject x="0" y="0" width={bubbleSize.width} height={bubbleSize.height}>
+      <path d={`M0 28C0 12.536 12.536 0 28 0H${bubbleSize.width-28}C${bubbleSize.width-12.536} 0 ${bubbleSize.width} 12.536 ${bubbleSize.width} 28V${bubbleSize.height-28}C${bubbleSize.width} ${bubbleSize.height-12.536} ${bubbleSize.width-12.536} ${bubbleSize.height} ${bubbleSize.width-28} ${bubbleSize.height}H28C12.536 ${bubbleSize.height} 0 ${bubbleSize.height-12.536} 0 ${bubbleSize.height-28}V28Z`} fill="#3C9B97" fillOpacity="0.8" />
+      <foreignObject x="18" y="18" width={bubbleSize.width - 36} height={bubbleSize.height - 36}>
         <div
           ref={textRef}
           style={{
@@ -156,12 +181,12 @@ function AutoBubble({ message }: { message: string }) {
             fontFamily: 'Instrument Sans, sans-serif',
             textAlign: 'left',
             wordBreak: 'break-word',
-            padding: '0 18px',
+            padding: '0',
+            margin: '0',
             boxSizing: 'border-box',
             overflow: 'hidden',
             whiteSpace: 'pre-wrap',
-            borderRadius: 32,
-            transition: 'all 0.3s cubic-bezier(.4,2,.6,1)',
+            overflowWrap: 'break-word'
           }}
         >
           <span style={{width: '100%', display: 'block'}}>{message}</span>
@@ -249,22 +274,38 @@ function LawGPTHeader({ onSidebarOpen, sidebarOpen }: LawGPTHeaderProps) {
 }
 
 
+// Chat message interface
+interface ChatMessage {
+  id: string;
+  type: 'user' | 'ai';
+  content: string;
+  title?: string;
+  timestamp: Date;
+}
+
 export default function LawGPTPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [sentMessage, setSentMessage] = useState<string | null>(null);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiTitle, setAiTitle] = useState<string | null>(null);
-  const [aiContent, setAiContent] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const handleSidebarToggle = () => setSidebarOpen((open) => !open);
 
   const handleSend = () => {
     if (message.trim() !== "") {
-      setSentMessage(message);
-      setAiTitle(null);
-      setAiContent(null);
+      // Add user message to chat history
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        type: 'user',
+        content: message.trim(),
+        timestamp: new Date()
+      };
+      
+      setChatHistory(prev => [...prev, userMessage]);
       setAiLoading(true);
+      
       // Simulate AI reply: set title and show skeleton, then show content
       setTimeout(() => {
         // For demo, just use a simple mapping or fallback
@@ -272,13 +313,40 @@ export default function LawGPTPage() {
         if (message.toLowerCase().includes("copyright")) title = "Copyright Action";
         else if (message.toLowerCase().includes("divorce")) title = "Divorce Law";
         else if (message.toLowerCase().includes("property")) title = "Property Dispute";
-        setAiTitle(title);
+        
         setTimeout(() => {
-          setAiContent("This is a sample AI-generated answer to your question. Replace this with your actual AI response.");
+          const aiMessage: ChatMessage = {
+            id: (Date.now() + 1).toString(),
+            type: 'ai',
+            content: "This is a sample AI-generated answer to your question. Replace this with your actual AI response.",
+            title: title,
+            timestamp: new Date()
+          };
+          
+          setChatHistory(prev => [...prev, aiMessage]);
           setAiLoading(false);
         }, 1800);
       }, 600);
+      
       setMessage("");
+      // Reset textarea for bottom input
+      if (textareaRef.current) {
+        textareaRef.current.style.height = '24px';
+      }
+      
+      // Scroll to bottom after message is sent
+      setTimeout(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
@@ -290,8 +358,8 @@ export default function LawGPTPage() {
       {sidebarOpen && (
         <LawGPTSidebar onClose={() => setSidebarOpen(false)} />
       )}
-      {/* Main LawGPT content or sent message box */}
-      {!sentMessage ? (
+      {/* Main LawGPT content or chat conversation */}
+      {chatHistory.length === 0 ? (
         <div className="relative w-screen h-screen min-h-[720px] bg-background font-body overflow-hidden flex flex-col items-center justify-start pt-48">
           {/* LawGPT Logo and Title */}
           <div className="flex flex-row items-center justify-center gap-3 mb-4">
@@ -305,43 +373,174 @@ export default function LawGPTPage() {
           </div>
           {/* Heading */}
           <h1 className="font-bold text-[40px] leading-[48px] text-white mb-8 text-center" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>What can I help with</h1>
-          {/* Chatbox */}
-          <div className="bg-[#232323] rounded-[28px] flex items-center relative mx-auto p-5">
-            <textarea
-              className="w-[480px] h-[72px] px-2 bg-transparent border-none outline-none text-white font-medium text-[18px] leading-[22px] z-20 box-border resize-none"
-              placeholder="Ask me anything about law"
-              value={message}
-              onChange={e => setMessage(e.target.value)}
-              rows={2}
-            />
-            {/* Send Button */}
-            <button
-              className="absolute right-3 bottom-3 w-9 h-9 bg-white rounded-full border-none flex items-center justify-center cursor-pointer z-30 shadow-none p-0"
-              aria-label="Send"
-              onClick={handleSend}
+          {/* Main Chatbox with rectangular design and rounded corners */}
+          <div 
+            className="relative mx-auto" 
+            style={{ 
+              width: '537px', 
+              height: Math.max(132, textareaRef.current ? textareaRef.current.scrollHeight + 80 : 132),
+              minHeight: '132px'
+            }}
+          >
+            {/* Background SVG with iPhone-like rounded corners */}
+            <svg 
+              width="537" 
+              height={Math.max(132, textareaRef.current ? textareaRef.current.scrollHeight + 80 : 132)}
+              viewBox={`0 0 537 ${Math.max(132, textareaRef.current ? textareaRef.current.scrollHeight + 80 : 132)}`}
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="absolute inset-0"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="11" fill="none" />
-                <path d="M12 17V7M12 7L7 12M12 7L17 12" stroke="#0E0E0E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+              <rect 
+                width="537" 
+                height={Math.max(132, textareaRef.current ? textareaRef.current.scrollHeight + 80 : 132)}
+                rx="28" 
+                fill="#232323" 
+              />
+            </svg>
+            
+            {/* Input area */}
+            <div className="absolute inset-0 flex flex-col justify-start px-8 pt-6">
+              <div className="flex items-start">
+                <div className="flex-1">
+                  <textarea
+                    ref={textareaRef}
+                    className="w-full bg-transparent border-none outline-none text-white resize-none"
+                    placeholder="Ask me anything about law"
+                    value={message}
+                    onChange={(e) => {
+                      setMessage(e.target.value);
+                      // Auto-resize logic
+                      const textarea = e.target;
+                      textarea.style.height = 'auto';
+                      const newHeight = Math.max(24, textarea.scrollHeight);
+                      textarea.style.height = newHeight + 'px';
+                    }}
+                    onKeyDown={handleKeyDown}
+                    style={{ 
+                      fontSize: '18px',
+                      lineHeight: '1.44',
+                      fontFamily: 'Instrument Sans, sans-serif',
+                      fontWeight: '400',
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      padding: '0',
+                      margin: '0',
+                      minHeight: '24px',
+                      maxHeight: 'none',
+                      overflowY: 'hidden',
+                      overflowX: 'hidden',
+                      wordWrap: 'break-word',
+                      whiteSpace: 'pre-wrap',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {/* Send Button positioned at bottom-right where the curve is */}
+              <div className="absolute bottom-4 right-4">
+                <button
+                  className="w-10 h-10 bg-white rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={handleSend}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path 
+                      fillRule="evenodd" 
+                      clipRule="evenodd" 
+                      d="M8 13C7.86739 13 7.74021 12.9473 7.64645 12.8536C7.55268 12.7598 7.5 12.6326 7.5 12.5L7.5 4.914L5.35355 7.06066C5.30631 7.1079 5.25 7.14504 5.1879 7.17025C5.12581 7.19547 5.05901 7.20826 4.99155 7.20826C4.92409 7.20826 4.85729 7.19547 4.7952 7.17025C4.7331 7.14504 4.67678 7.1079 4.62955 7.06066C4.58231 7.01343 4.54517 6.95711 4.51995 6.89502C4.49474 6.83292 4.48195 6.76612 4.48195 6.69866C4.48195 6.6312 4.49474 6.5644 4.51995 6.50231C4.54517 6.44021 4.58231 6.38389 4.62955 6.33666L7.62955 3.33666C7.67678 3.28942 7.7331 3.25228 7.7952 3.22707C7.85729 3.20185 7.92409 3.18906 7.99155 3.18906C8.05901 3.18906 8.12581 3.20185 8.1879 3.22707C8.25 3.25228 8.30632 3.28942 8.35355 3.33666L11.3536 6.33666C11.4008 6.38389 11.4379 6.44021 11.4632 6.50231C11.4884 6.5644 11.5012 6.6312 11.5012 6.69866C11.5012 6.76612 11.4884 6.83292 11.4632 6.89502C11.4379 6.95711 11.4008 7.01343 11.3536 7.06066C11.2598 7.15443 11.1326 7.20711 11 7.20711C10.9325 7.20711 10.8657 7.19432 10.8036 7.16911C10.7415 7.14389 10.6852 7.10675 10.638 7.05952L8.5 4.914L8.5 12.5C8.5 12.6326 8.44732 12.7598 8.35355 12.8536C8.25979 12.9473 8.13261 13 8 13Z" 
+                      fill="#0E0E0E" 
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="relative w-screen h-screen min-h-[720px] bg-background font-body overflow-hidden flex flex-col items-center justify-start pt-32">
-          {/* Sent message bubble at top right */}
-          <div className="fixed top-32 right-64 z-50 flex flex-col items-end pointer-events-none">
-            <AutoBubble message={sentMessage} />
+        <div ref={chatContainerRef} className="relative w-screen h-screen min-h-[720px] bg-background font-body overflow-auto flex flex-col">
+          {/* Content area with chat history */}
+          <div className="flex-1 flex flex-col pt-32 pb-32">
+            {/* Chat history */}
+            <div className="w-full max-w-4xl mx-auto px-8 flex-1 space-y-8">
+              {chatHistory.map((chat, index) => (
+                <div key={chat.id} className="flex flex-col gap-6">
+                  {chat.type === 'user' ? (
+                    <div className="flex justify-end">
+                      <div className="max-w-md">
+                        <AutoBubble message={chat.content} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {chat.title && (
+                        <h2 className="text-white text-[2.5rem] font-bold" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>
+                          {chat.title}
+                        </h2>
+                      )}
+                      <div className="text-white/90 text-lg leading-7" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>
+                        {chat.content}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {/* Show loading state for latest AI response */}
+              {aiLoading && (
+                <div className="flex flex-col gap-4">
+                  <SkeletonLoader />
+                </div>
+              )}
+            </div>
           </div>
-          {/* AI reply area */}
-          <div className="w-full max-w-4xl mx-auto mt-12 px-8">
-            {aiTitle && (
-              <h2 className="text-white text-[2.5rem] font-bold mb-6" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>{aiTitle}</h2>
-            )}
-            {aiLoading && <SkeletonLoader />}
-            {aiContent && !aiLoading && (
-              <div className="mt-6 text-white/90 text-lg leading-7" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>{aiContent}</div>
-            )}
+          
+          {/* Bottom input chatbox */}
+          <div className="fixed bottom-0 left-0 right-0 p-6 flex justify-center z-50">
+            <div className="relative" style={{ width: '537px', height: '62px' }}>
+              {/* Background SVG */}
+              <svg width="537" height="62" viewBox="0 0 537 62" fill="none" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
+                <rect width="537" height="62" rx="31" fill="#D9D9D9" fillOpacity="0.1" />
+              </svg>
+              
+              {/* Input area */}
+              <div className="absolute inset-0 flex items-center px-6">
+                <textarea
+                  ref={textareaRef}
+                  className="flex-1 bg-transparent border-none outline-none text-white font-medium resize-none"
+                  placeholder="Ask me anything about law"
+                  value={message}
+                  onChange={(e) => {
+                    setMessage(e.target.value);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  style={{ 
+                    fontSize: '18px',
+                    lineHeight: '1.5',
+                    fontFamily: 'Instrument Sans, sans-serif',
+                    color: '#FEFEFE',
+                    opacity: 0.5,
+                    padding: '0',
+                    margin: '0',
+                    height: '24px',
+                    maxHeight: '24px',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis'
+                  }}
+                />
+                
+                {/* Send Button */}
+                <button
+                  className="ml-4 w-9 h-9 bg-white rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
+                  onClick={handleSend}
+                  style={{ marginLeft: '16px' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M8 13C7.86739 13 7.74021 12.9473 7.64645 12.8536C7.55268 12.7598 7.5 12.6326 7.5 12.5L7.5 4.914L5.35355 7.06066C5.30631 7.1079 5.25 7.14504 5.1879 7.17025C5.12581 7.19547 5.05901 7.20826 4.99155 7.20826C4.92409 7.20826 4.85729 7.19547 4.7952 7.17025C4.7331 7.14504 4.67678 7.1079 4.62955 7.06066C4.58231 7.01343 4.54517 6.95711 4.51995 6.89502C4.49474 6.83292 4.48195 6.76612 4.48195 6.69866C4.48195 6.6312 4.49474 6.5644 4.51995 6.50231C4.54517 6.44021 4.58231 6.38389 4.62955 6.33666L7.62955 3.33666C7.67678 3.28942 7.7331 3.25228 7.7952 3.22707C7.85729 3.20185 7.92409 3.18906 7.99155 3.18906C8.05901 3.18906 8.12581 3.20185 8.1879 3.22707C8.25 3.25228 8.30632 3.28942 8.35355 3.33666L11.3536 6.33666C11.4008 6.38389 11.4379 6.44021 11.4632 6.50231C11.4884 6.5644 11.5012 6.6312 11.5012 6.69866C11.5012 6.76612 11.4884 6.83292 11.4632 6.89502C11.4379 6.95711 11.4008 7.01343 11.3536 7.06066C11.2598 7.15443 11.1326 7.20711 11 7.20711C10.9325 7.20711 10.8657 7.19432 10.8036 7.16911C10.7415 7.14389 10.6852 7.10675 10.638 7.05952L8.5 4.914L8.5 12.5C8.5 12.6326 8.44732 12.7598 8.35355 12.8536C8.25979 12.9473 8.13261 13 8 13Z" fill="#0E0E0E" fillOpacity="0.933333" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
