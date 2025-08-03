@@ -1,6 +1,10 @@
 
 "use client";
 
+import React, { useRef, useEffect, useState } from "react";
+import Header from '@/components/layout/header';
+import WowAhhAnimation from "./Animation";
+
 // Simple skeleton loader component
 function SkeletonLoader() {
   return (
@@ -13,9 +17,6 @@ function SkeletonLoader() {
     </div>
   );
 }
-
-import React, { useRef, useEffect, useState } from "react";
-import Header from '@/components/layout/header';
 // Custom LawGPT Sidebar
 function LawGPTSidebar({ onClose }: { onClose: () => void }) {
   const mockChats = [
@@ -94,125 +95,155 @@ function LawGPTSidebar({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
-import WowAhhAnimation from "./Animation";
 
 // Auto-sizing chat bubble component
-function AutoBubble({ message }: { message: string }) {
+function AutoBubble({ message, messageId }: { message: string; messageId: string }) {
   const textRef = useRef<HTMLDivElement>(null);
-  const [bubbleSize, setBubbleSize] = useState({ width: 120, height: 77 });
+  const [bubbleSize, setBubbleSize] = useState({ width: 120, height: 60 }); // Reduced initial width
   const [pop, setPop] = useState(false);
-  const minWidth = 200;
-  const maxWidth = 450;
-  const padding = 36; // 18px left + 18px right
-  const verticalPadding = 36; // 18px top + 18px bottom
-  const minHeight = 60;
+  const [isCalculated, setIsCalculated] = useState(false);
 
+  // Calculate bubble size immediately when message changes
   useEffect(() => {
-    if (textRef.current && message) {
-      // First, measure the text as a single line to get natural width
-      const tempSingleLine = document.createElement('div');
-      tempSingleLine.style.position = 'absolute';
-      tempSingleLine.style.visibility = 'hidden';
-      tempSingleLine.style.fontSize = '20px';
-      tempSingleLine.style.fontFamily = 'Instrument Sans, sans-serif';
-      tempSingleLine.style.fontWeight = '600';
-      tempSingleLine.style.lineHeight = '24px';
-      tempSingleLine.style.whiteSpace = 'nowrap';
-      tempSingleLine.style.display = 'inline-block';
-      tempSingleLine.textContent = message;
-      document.body.appendChild(tempSingleLine);
-      
-      const naturalWidth = tempSingleLine.offsetWidth;
-      const singleLineWidth = naturalWidth + padding;
-      document.body.removeChild(tempSingleLine);
+    const calculateSize = () => {
+      const padding = 36;
+      const verticalPadding = 36;
+      const minWidth = 120; // Reduced minimum width for short messages
+      const minHeight = 60;
+      const maxSingleLineWidth = 400; // Slightly increased threshold
+      const wrapWidth = 380; // Increased wrap width for longer text
 
-      let finalWidth, finalHeight;
-      
-      // Force wrapping for text longer than what would fit comfortably
-      if (singleLineWidth > 380) { // Reduced threshold to force wrapping earlier
-        // Text needs to wrap - measure wrapped height
-        const tempWrapped = document.createElement('div');
-        tempWrapped.style.position = 'absolute';
-        tempWrapped.style.visibility = 'hidden';
-        tempWrapped.style.fontSize = '20px';
-        tempWrapped.style.fontFamily = 'Instrument Sans, sans-serif';
-        tempWrapped.style.fontWeight = '600';
-        tempWrapped.style.lineHeight = '24px';
-        tempWrapped.style.whiteSpace = 'pre-wrap';
-        tempWrapped.style.wordBreak = 'break-word';
-        tempWrapped.style.overflowWrap = 'break-word';
-        tempWrapped.style.width = '350px'; // Fixed width for wrapping calculation
-        tempWrapped.textContent = message;
-        document.body.appendChild(tempWrapped);
-        
-        const wrappedHeight = tempWrapped.offsetHeight;
-        document.body.removeChild(tempWrapped);
-        
-        finalWidth = 386; // 350px content + 36px padding
-        finalHeight = Math.max(minHeight, wrappedHeight + verticalPadding);
-      } else {
-        // Text fits on single line - use natural width
-        finalWidth = Math.max(singleLineWidth, minWidth);
-        finalHeight = minHeight;
+      // Create a unique container for this specific message measurement
+      const measureContainer = document.createElement('div');
+      measureContainer.style.position = 'absolute';
+      measureContainer.style.visibility = 'hidden';
+      measureContainer.style.top = '-9999px';
+      measureContainer.style.left = '-9999px';
+      measureContainer.style.pointerEvents = 'none';
+      measureContainer.id = `bubble-measure-${messageId}`;
+      document.body.appendChild(measureContainer);
+
+      try {
+        // First, measure as single line
+        const singleLineDiv = document.createElement('div');
+        singleLineDiv.style.fontSize = '20px';
+        singleLineDiv.style.fontFamily = 'Instrument Sans, sans-serif';
+        singleLineDiv.style.fontWeight = '600';
+        singleLineDiv.style.lineHeight = '24px';
+        singleLineDiv.style.whiteSpace = 'nowrap';
+        singleLineDiv.style.display = 'inline-block';
+        singleLineDiv.textContent = message;
+        measureContainer.appendChild(singleLineDiv);
+
+        const naturalWidth = singleLineDiv.offsetWidth;
+        const singleLineWidth = naturalWidth + padding;
+
+        let finalWidth, finalHeight;
+
+        if (singleLineWidth > maxSingleLineWidth) {
+          // Text needs wrapping
+          const wrappedDiv = document.createElement('div');
+          wrappedDiv.style.fontSize = '20px';
+          wrappedDiv.style.fontFamily = 'Instrument Sans, sans-serif';
+          wrappedDiv.style.fontWeight = '600';
+          wrappedDiv.style.lineHeight = '24px';
+          wrappedDiv.style.whiteSpace = 'pre-wrap';
+          wrappedDiv.style.wordBreak = 'break-word';
+          wrappedDiv.style.overflowWrap = 'break-word';
+          wrappedDiv.style.width = `${wrapWidth}px`;
+          wrappedDiv.textContent = message;
+          measureContainer.appendChild(wrappedDiv);
+
+          const wrappedHeight = wrappedDiv.offsetHeight;
+          finalWidth = wrapWidth + padding;
+          finalHeight = Math.max(minHeight, wrappedHeight + verticalPadding);
+        } else {
+          // Single line - use natural width but respect minimum
+          finalWidth = Math.max(singleLineWidth, minWidth);
+          finalHeight = minHeight;
+        }
+
+        setBubbleSize({ width: finalWidth, height: finalHeight });
+        setIsCalculated(true);
+
+        // Pop animation
+        setPop(true);
+        setTimeout(() => setPop(false), 200);
+
+      } finally {
+        // Clean up measurement container
+        document.body.removeChild(measureContainer);
       }
+    };
+
+    if (message && messageId) {
+      // Reset state for new calculation
+      setIsCalculated(false);
+      setBubbleSize({ width: 120, height: 60 }); // Reduced reset width
       
-      setBubbleSize({ width: finalWidth, height: finalHeight });
-      
-      // Pop animation on send
-      setPop(true);
-      const timeout = setTimeout(() => setPop(false), 200);
-      return () => clearTimeout(timeout);
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        calculateSize();
+      });
     }
-  }, [message]);
+  }, [message, messageId]);
 
   return (
-    <svg
-      width={bubbleSize.width}
-      height={bubbleSize.height}
-      viewBox={`0 0 ${bubbleSize.width} ${bubbleSize.height}`}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={`pointer-events-auto transition-all duration-300 ${pop ? 'scale-105' : 'scale-100'}`}
-      style={{ filter: 'drop-shadow(0 4px 16px rgba(60,155,151,0.18))', borderRadius: 32, transition: 'all 0.3s cubic-bezier(.4,2,.6,1)' }}
-    >
-      <path d={`M0 28C0 12.536 12.536 0 28 0H${bubbleSize.width-28}C${bubbleSize.width-12.536} 0 ${bubbleSize.width} 12.536 ${bubbleSize.width} 28V${bubbleSize.height-28}C${bubbleSize.width} ${bubbleSize.height-12.536} ${bubbleSize.width-12.536} ${bubbleSize.height} ${bubbleSize.width-28} ${bubbleSize.height}H28C12.536 ${bubbleSize.height} 0 ${bubbleSize.height-12.536} 0 ${bubbleSize.height-28}V28Z`} fill="#3C9B97" fillOpacity="0.8" />
-      <foreignObject x="18" y="18" width={bubbleSize.width - 36} height={bubbleSize.height - 36}>
-        <div
-          ref={textRef}
-          style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: bubbleSize.height <= minHeight ? 'center' : 'flex-start',
-            justifyContent: 'flex-start',
-            color: 'white',
-            fontWeight: 600,
-            fontSize: 20,
-            lineHeight: '24px',
-            fontFamily: 'Instrument Sans, sans-serif',
-            textAlign: 'left',
-            wordBreak: 'break-word',
-            padding: '0',
-            margin: '0',
-            boxSizing: 'border-box',
-            overflow: 'visible',
-            whiteSpace: bubbleSize.width > 380 ? 'pre-wrap' : 'nowrap',
-            overflowWrap: 'break-word',
-            maxWidth: '100%'
-          }}
-        >
-          <span style={{
-            width: '100%', 
-            display: 'block',
-            wordBreak: 'break-word',
-            overflowWrap: 'break-word',
-            whiteSpace: bubbleSize.width > 380 ? 'pre-wrap' : 'nowrap'
-          }}>
-            {message}
-          </span>
-        </div>
-      </foreignObject>
-    </svg>
+    <div className="inline-block">
+      <svg
+        key={`${messageId}-${isCalculated}`} // Force re-render when calculation completes
+        width={bubbleSize.width}
+        height={bubbleSize.height}
+        viewBox={`0 0 ${bubbleSize.width} ${bubbleSize.height}`}
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`pointer-events-auto transition-all duration-300 ${pop ? 'scale-105' : 'scale-100'}`}
+        style={{ 
+          filter: 'drop-shadow(0 4px 16px rgba(60,155,151,0.18))', 
+          borderRadius: 32, 
+          transition: 'all 0.3s cubic-bezier(.4,2,.6,1)',
+          display: 'block'
+        }}
+      >
+        <path d={`M0 28C0 12.536 12.536 0 28 0H${bubbleSize.width-28}C${bubbleSize.width-12.536} 0 ${bubbleSize.width} 12.536 ${bubbleSize.width} 28V${bubbleSize.height-28}C${bubbleSize.width} ${bubbleSize.height-12.536} ${bubbleSize.width-12.536} ${bubbleSize.height} ${bubbleSize.width-28} ${bubbleSize.height}H28C12.536 ${bubbleSize.height} 0 ${bubbleSize.height-12.536} 0 ${bubbleSize.height-28}V28Z`} fill="#3C9B97" fillOpacity="0.8" />
+        <foreignObject x="18" y="18" width={bubbleSize.width - 36} height={bubbleSize.height - 36}>
+          <div
+            ref={textRef}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: bubbleSize.height <= 60 ? 'center' : 'flex-start',
+              justifyContent: 'flex-start',
+              color: 'white',
+              fontWeight: 600,
+              fontSize: 20,
+              lineHeight: '24px',
+              fontFamily: 'Instrument Sans, sans-serif',
+              textAlign: 'left',
+              wordBreak: 'break-word',
+              padding: '0',
+              margin: '0',
+              boxSizing: 'border-box',
+              overflow: 'visible',
+              whiteSpace: bubbleSize.width > 400 ? 'pre-wrap' : 'nowrap', // Updated threshold
+              overflowWrap: 'break-word',
+              maxWidth: '100%'
+            }}
+          >
+            <span style={{
+              width: '100%', 
+              display: 'block',
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
+              whiteSpace: bubbleSize.width > 400 ? 'pre-wrap' : 'nowrap' // Updated threshold
+            }}>
+              {message}
+            </span>
+          </div>
+        </foreignObject>
+      </svg>
+    </div>
   );
 }
 
@@ -309,7 +340,80 @@ export default function LawGPTPage() {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const bottomTextareaRef = useRef<HTMLTextAreaElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Ensure page always starts at the top when component mounts
+  useEffect(() => {
+    // Force immediate scroll to top
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []); // Run only once on mount
+
+  // Auto-scroll to bottom when chat history changes
+  useEffect(() => {
+    if (chatHistory.length > 0 && chatContainerRef.current) {
+      const scrollToBottom = () => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+      };
+      
+      // Multiple scroll attempts to ensure it works with dynamic content
+      scrollToBottom();
+      const timeoutId1 = setTimeout(scrollToBottom, 50);
+      const timeoutId2 = setTimeout(scrollToBottom, 200);
+      const timeoutId3 = setTimeout(scrollToBottom, 500);
+      
+      return () => {
+        clearTimeout(timeoutId1);
+        clearTimeout(timeoutId2);
+        clearTimeout(timeoutId3);
+      };
+    }
+  }, [chatHistory.length]);
+
+  // Apply scroll prevention only when there's no chat history
+  useEffect(() => {
+    if (chatHistory.length > 0) return; // Don't prevent scrolling if there's chat history
+    
+    // Force scroll to top and prevent any scrolling
+    const preventScroll = (e: Event) => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    };
+    
+    // Temporarily prevent scrolling during initial load
+    window.addEventListener('scroll', preventScroll, { passive: false });
+    
+    // Remove scroll prevention after a short delay
+    const timeoutId = setTimeout(() => {
+      window.removeEventListener('scroll', preventScroll);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }, 500);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('scroll', preventScroll);
+    };
+  }, [chatHistory]); // Use the entire chatHistory array instead of just length
+
+  // Additional effect to ensure the header stays visible on any layout changes
+  useEffect(() => {
+    const ensureTopPosition = () => {
+      if (window.scrollY === 0) return; // Already at top, no need to scroll
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    };
+    
+    // Check periodically in the first few seconds after mount
+    const interval = setInterval(ensureTopPosition, 100);
+    const timeout = setTimeout(() => clearInterval(interval), 2000);
+    
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, []);
 
   const handleSidebarToggle = () => setSidebarOpen((open) => !open);
 
@@ -349,17 +453,23 @@ export default function LawGPTPage() {
       }, 600);
       
       setMessage("");
-      // Reset textarea for bottom input
-      if (textareaRef.current) {
-        textareaRef.current.style.height = '24px';
+      // Reset textarea for bottom input - use the appropriate ref based on current state
+      const currentTextarea = chatHistory.length === 0 ? textareaRef.current : bottomTextareaRef.current;
+      if (currentTextarea) {
+        currentTextarea.style.height = '24px';
       }
       
-      // Scroll to bottom after message is sent
-      setTimeout(() => {
+      // Scroll to bottom after message is sent  
+      const scrollToBottom = () => {
         if (chatContainerRef.current) {
           chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
-      }, 100);
+      };
+      
+      // Multiple scroll attempts
+      setTimeout(scrollToBottom, 10);
+      setTimeout(scrollToBottom, 100);
+      setTimeout(scrollToBottom, 300);
     }
   };
 
@@ -371,7 +481,7 @@ export default function LawGPTPage() {
   };
 
   return (
-    <>
+    <div className="relative w-screen h-screen overflow-hidden">
       <LawGPTHeader onSidebarOpen={handleSidebarToggle} sidebarOpen={sidebarOpen} />
       <WowAhhAnimation />
       {/* Sidebar overlays the page, rest of page remains unchanged */}
@@ -380,7 +490,7 @@ export default function LawGPTPage() {
       )}
       {/* Main LawGPT content or chat conversation */}
       {chatHistory.length === 0 ? (
-        <div className="relative w-screen h-screen min-h-[720px] bg-background font-body overflow-hidden flex flex-col items-center justify-start pt-48">
+        <div className="relative w-full h-full bg-background font-body flex flex-col items-center justify-start overflow-hidden" style={{ paddingTop: '240px' }}>
           {/* LawGPT Logo and Title */}
           <div className="flex flex-row items-center justify-center gap-3 mb-4">
             <svg width="31" height="31" viewBox="0 0 31 31" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -477,40 +587,49 @@ export default function LawGPTPage() {
           </div>
         </div>
       ) : (
-        <div ref={chatContainerRef} className="relative w-screen h-screen min-h-[720px] bg-background font-body overflow-auto flex flex-col">
-          {/* Content area with chat history */}
-          <div className="flex-1 flex flex-col pt-32 pb-32">
-            {/* Chat history */}
-            <div className="w-full max-w-4xl mx-auto px-8 flex-1 space-y-8">
-              {chatHistory.map((chat, index) => (
-                <div key={chat.id} className="flex flex-col gap-6">
-                  {chat.type === 'user' ? (
-                    <div className="flex justify-end">
-                      <div className="max-w-md">
-                        <AutoBubble message={chat.content} />
+        <div className="relative w-full h-full bg-background font-body flex flex-col overflow-hidden">
+          {/* Content area with chat history - fixed height container */}
+          <div className="flex-1 flex flex-col" style={{ paddingTop: '100px', paddingBottom: '140px' }}>
+            {/* Scrollable chat history area */}
+            <div 
+              ref={chatContainerRef} 
+              className="w-full max-w-4xl mx-auto px-8 flex-1 overflow-y-auto scrollbar-hide" 
+              style={{ 
+                paddingBottom: '60px', // More space before the input box
+                maxHeight: 'calc(100vh - 240px)' // Better height calculation
+              }}
+            >
+              <div className="space-y-8">
+                {chatHistory.map((chat, index) => (
+                  <div key={chat.id} className="w-full">
+                    {chat.type === 'user' ? (
+                      <div className="flex justify-end w-full">
+                        <div className="max-w-lg"> {/* Increased max-width for longer messages */}
+                          <AutoBubble message={chat.content} messageId={chat.id} />
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-4">
-                      {chat.title && (
-                        <h2 className="text-white text-[2.5rem] font-bold" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>
-                          {chat.title}
-                        </h2>
-                      )}
-                      <div className="text-white/90 text-lg leading-7" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>
-                        {chat.content}
+                    ) : (
+                      <div className="flex flex-col gap-4 w-full">
+                        {chat.title && (
+                          <h2 className="text-white text-[2.5rem] font-bold" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>
+                            {chat.title}
+                          </h2>
+                        )}
+                        <div className="text-white/90 text-lg leading-7" style={{ fontFamily: 'Instrument Sans, sans-serif' }}>
+                          {chat.content}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-              
-              {/* Show loading state for latest AI response */}
-              {aiLoading && (
-                <div className="flex flex-col gap-4">
-                  <SkeletonLoader />
-                </div>
-              )}
+                    )}
+                  </div>
+                ))}
+                
+                {/* Show loading state for latest AI response */}
+                {aiLoading && (
+                  <div className="flex flex-col gap-4 w-full">
+                    <SkeletonLoader />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
@@ -525,7 +644,7 @@ export default function LawGPTPage() {
               {/* Input area */}
               <div className="absolute inset-0 flex items-center px-6">
                 <textarea
-                  ref={textareaRef}
+                  ref={bottomTextareaRef}
                   className="flex-1 bg-transparent border-none outline-none text-white font-medium resize-none"
                   placeholder="Ask me anything about law"
                   value={message}
@@ -564,7 +683,7 @@ export default function LawGPTPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
