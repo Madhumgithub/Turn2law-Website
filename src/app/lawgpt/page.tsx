@@ -104,48 +104,59 @@ function AutoBubble({ message }: { message: string }) {
   const minWidth = 200;
   const maxWidth = 450;
   const padding = 36; // 18px left + 18px right
+  const verticalPadding = 36; // 18px top + 18px bottom
   const minHeight = 60;
-  const maxHeight = 400;
 
   useEffect(() => {
     if (textRef.current && message) {
-      // Create a temporary element to measure text
-      const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.visibility = 'hidden';
-      tempDiv.style.whiteSpace = 'nowrap';
-      tempDiv.style.fontSize = '20px';
-      tempDiv.style.fontFamily = 'Instrument Sans, sans-serif';
-      tempDiv.style.fontWeight = '600';
-      tempDiv.style.lineHeight = '24px';
-      tempDiv.textContent = message;
-      document.body.appendChild(tempDiv);
+      // First, measure the text as a single line to get natural width
+      const tempSingleLine = document.createElement('div');
+      tempSingleLine.style.position = 'absolute';
+      tempSingleLine.style.visibility = 'hidden';
+      tempSingleLine.style.fontSize = '20px';
+      tempSingleLine.style.fontFamily = 'Instrument Sans, sans-serif';
+      tempSingleLine.style.fontWeight = '600';
+      tempSingleLine.style.lineHeight = '24px';
+      tempSingleLine.style.whiteSpace = 'nowrap';
+      tempSingleLine.style.display = 'inline-block';
+      tempSingleLine.textContent = message;
+      document.body.appendChild(tempSingleLine);
       
-      const singleLineWidth = tempDiv.offsetWidth + padding;
-      document.body.removeChild(tempDiv);
+      const naturalWidth = tempSingleLine.offsetWidth;
+      const singleLineWidth = naturalWidth + padding;
+      document.body.removeChild(tempSingleLine);
 
-      if (singleLineWidth <= maxWidth) {
-        setBubbleSize({ width: Math.max(singleLineWidth, minWidth), height: minHeight });
+      let finalWidth, finalHeight;
+      
+      // Force wrapping for text longer than what would fit comfortably
+      if (singleLineWidth > 380) { // Reduced threshold to force wrapping earlier
+        // Text needs to wrap - measure wrapped height
+        const tempWrapped = document.createElement('div');
+        tempWrapped.style.position = 'absolute';
+        tempWrapped.style.visibility = 'hidden';
+        tempWrapped.style.fontSize = '20px';
+        tempWrapped.style.fontFamily = 'Instrument Sans, sans-serif';
+        tempWrapped.style.fontWeight = '600';
+        tempWrapped.style.lineHeight = '24px';
+        tempWrapped.style.whiteSpace = 'pre-wrap';
+        tempWrapped.style.wordBreak = 'break-word';
+        tempWrapped.style.overflowWrap = 'break-word';
+        tempWrapped.style.width = '350px'; // Fixed width for wrapping calculation
+        tempWrapped.textContent = message;
+        document.body.appendChild(tempWrapped);
+        
+        const wrappedHeight = tempWrapped.offsetHeight;
+        document.body.removeChild(tempWrapped);
+        
+        finalWidth = 386; // 350px content + 36px padding
+        finalHeight = Math.max(minHeight, wrappedHeight + verticalPadding);
       } else {
-        // For multi-line text, create another temp element
-        const tempMultiDiv = document.createElement('div');
-        tempMultiDiv.style.position = 'absolute';
-        tempMultiDiv.style.visibility = 'hidden';
-        tempMultiDiv.style.width = (maxWidth - padding) + 'px';
-        tempMultiDiv.style.fontSize = '20px';
-        tempMultiDiv.style.fontFamily = 'Instrument Sans, sans-serif';
-        tempMultiDiv.style.fontWeight = '600';
-        tempMultiDiv.style.lineHeight = '24px';
-        tempMultiDiv.style.whiteSpace = 'pre-wrap';
-        tempMultiDiv.style.wordWrap = 'break-word';
-        tempMultiDiv.textContent = message;
-        document.body.appendChild(tempMultiDiv);
-        
-        const wrappedHeight = Math.min(Math.max(tempMultiDiv.offsetHeight + padding, minHeight), maxHeight);
-        document.body.removeChild(tempMultiDiv);
-        
-        setBubbleSize({ width: maxWidth, height: wrappedHeight });
+        // Text fits on single line - use natural width
+        finalWidth = Math.max(singleLineWidth, minWidth);
+        finalHeight = minHeight;
       }
+      
+      setBubbleSize({ width: finalWidth, height: finalHeight });
       
       // Pop animation on send
       setPop(true);
@@ -172,7 +183,7 @@ function AutoBubble({ message }: { message: string }) {
             width: '100%',
             height: '100%',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: bubbleSize.height <= minHeight ? 'center' : 'flex-start',
             justifyContent: 'flex-start',
             color: 'white',
             fontWeight: 600,
@@ -184,12 +195,21 @@ function AutoBubble({ message }: { message: string }) {
             padding: '0',
             margin: '0',
             boxSizing: 'border-box',
-            overflow: 'hidden',
-            whiteSpace: 'pre-wrap',
-            overflowWrap: 'break-word'
+            overflow: 'visible',
+            whiteSpace: bubbleSize.width > 380 ? 'pre-wrap' : 'nowrap',
+            overflowWrap: 'break-word',
+            maxWidth: '100%'
           }}
         >
-          <span style={{width: '100%', display: 'block'}}>{message}</span>
+          <span style={{
+            width: '100%', 
+            display: 'block',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
+            whiteSpace: bubbleSize.width > 380 ? 'pre-wrap' : 'nowrap'
+          }}>
+            {message}
+          </span>
         </div>
       </foreignObject>
     </svg>
